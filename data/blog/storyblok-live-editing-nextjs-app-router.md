@@ -173,7 +173,6 @@ export const getStoryblokData = async (slug: string) => {
       const result = await storyblokApi.get(
         `cdn/stories/${slug}`,
         { version: "draft" },
-        { cache: "no-store" }
       );
 
       return result.data.story;

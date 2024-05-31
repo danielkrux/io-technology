@@ -89,7 +89,7 @@ export const registerStoryblokBridge = ({
 };
 ```
 
-This function listens to live editing events, as we found out above, and makes a callback with the story containing the latest live editing data. Awesome!
+This function listens to live editing events, as we found out above, and makes a callback with the story containing the latest live editing data.
 
 We then use this function in a client component
 

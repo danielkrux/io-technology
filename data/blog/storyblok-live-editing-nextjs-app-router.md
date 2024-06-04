@@ -10,7 +10,7 @@ theme: 'blue'
 
 ## The problem
 
-When working with Storyblok there are **two** ways to set up your NextJS app if you use the app router. The first way is to wrap your entire app in a provider which then takes care of updating the app when you edit anything in the preview environment of Storyblok, thus giving you live editing. Live editing is a cool feature because an editor can directly see the changes they made without constantly saving the page.
+When working with Storyblok there are **two** ways to set up your Next.js app if you use the app router. The first way is to wrap your entire app in a provider which then takes care of updating the app when you edit anything in the preview environment of Storyblok, thus giving you live editing. Live editing is a cool feature because an editor can directly see the changes they made without constantly saving the page.
 
 The second approach keeps everything server-side. This is nice because we can then leverage the full power of server components. But this approach comes with a big limitation... you lose the live editing support and the editor can only see their changes after they've hit the save button.
 
@@ -32,18 +32,18 @@ sbBridge.on(["input", "published", "change  "], (event) => {
 ```
 
 The event returned contains the updated story with the live editing data the user entered. Awesome!
-We can use this live story and save it somewhere, then revalidate the page using NextJS' `revalidatePath()` API. Let's see how:
+We can use this live story and save it somewhere, then revalidate the page using Next.js' `revalidatePath()` API. Let's see how:
 
 Let's first tackle the "save it somewhere" part of the solution. I used [node-cache](https://github.com/node-cache/node-cache) for this.
 
-Create a `instrumention.ts` file in the root or src folder of your project:
+Create an `instrumention.ts` file in the root or src folder of your project:
 
-```ts
+```jsx
 import type NodeCache from 'node-cache'
 
 export async function register() {
   const NodeCache = (await import('node-cache')).default
-  const config: NodeCache.Options = {
+  const config = {
     stdTTL: 100,
   }
 
@@ -53,7 +53,7 @@ export async function register() {
 
 Add this to `next.config`:
 
-```TS
+```js
  experimental: {
   instrumentationHook: true,
  },
@@ -61,52 +61,42 @@ Add this to `next.config`:
 
 This setup makes sure the cache won't be reset with each request, only on server startup.
 
-Next, let's take a look at how we get the live editing data from Storybook and save it in this cache.
+Next, let's take a look at how we get the live editing data from Storyblok and save it in this cache.
 For this we first need to create a custom Storyblok bridge:
 
-```TS
-export const registerStoryblokBridge = ({
-  onInput,
-}: {
-  onInput: (story: ISbStoryData<any>) => void;
-}) => {
-  const isServer = typeof window === "undefined";
-  const isBridgeLoaded =
-  !isServer && typeof window.storyblokRegisterEvent !== "undefined";
+```jsx
+export const registerStoryblokBridge = ({ onInput }) => {
+  const isServer = typeof window === 'undefined'
+  const isBridgeLoaded = !isServer && typeof window.storyblokRegisterEvent !== 'undefined'
 
   if (!isBridgeLoaded) {
-    return;
+    return
   }
 
   window.storyblokRegisterEvent(() => {
-    const sbBridge = new window.StoryblokBridge();
-    sbBridge.on(["input"], (event) => {
-      if (!event?.story) return;
+    const sbBridge = new window.StoryblokBridge()
+    sbBridge.on(['input'], (event) => {
+      if (!event?.story) return
 
-      onInput(event.story);
-    });
-  });
-};
+      onInput(event.story)
+    })
+  })
+}
 ```
 
 This function listens to live editing events, as we found out above, and makes a callback with the story containing the latest live editing data.
 
 We then use this function in a client component
 
-```TS
+```jsx
 "use client";
 
 import { previewUpdateAction } from "@/actions/previewUpdateAction";
 import { registerStoryblokBridge } from "@/utils/storyblok";
-import { ISbStoryData } from "@storyblok/react/rsc";
 import { useEffect, startTransition } from "react";
 
-export const StoryblokPreviewSyncer = ({
-  pathToRevalidate,
-}: {
-  pathToRevalidate: string;
-}) => {
-  function handleInput(story: ISbStoryData<any>) {
+export const StoryblokPreviewSyncer = ({ pathToRevalidate }) => {
+  function handleInput(story) {
     startTransition(() =>
       previewUpdateAction({
         story,
@@ -126,90 +116,80 @@ export const StoryblokPreviewSyncer = ({
 
 ```
 
-This client component makes sure the window event is fired with `useEffect`. The `handleInput` function uses Reacts' `startTransition` to call a NextJS Server Action containing the latest data. Let's find out how this server action looks.
+This client component makes sure the window event is fired with `useEffect`. The `handleInput` function uses React's `startTransition` to call a Next.js Server Action containing the latest data. Let's find out what this server action looks like.
 
-```TS
-"use server";
+```jsx
+'use server'
 
-import { revalidatePath } from "next/cache";
-import { ISbStoryData } from "@storyblok/react";
+import { revalidatePath } from 'next/cache'
+import { ISbStoryData } from '@storyblok/react'
 
-export async function previewUpdateAction({
-  story,
-  pathToRevalidate,
-}: {
-  story: ISbStoryData<any>;
-  pathToRevalidate: string;
-}) {
+export async function previewUpdateAction({ story, pathToRevalidate }) {
   if (!story) {
-    console.error("No story provided");
-    return;
+    console.error('No story provided')
+    return
   }
 
   try {
-    global.storyblokCache.set(story.slug, JSON.stringify(story), 100);
+    global.storyblokCache.set(story.slug, JSON.stringify(story), 100)
 
     if (pathToRevalidate) {
-      revalidatePath(pathToRevalidate);
+      revalidatePath(pathToRevalidate)
     }
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
 }
 ```
 
-This function takes the story with the live editing data and saves it to our cache. It then calls `revalidatePath` to make sure NextJS knows it needs to update the page.
+This function takes the story with the live editing data and saves it to our cache. It then calls `revalidatePath` to make sure Next.js knows it needs to update the page.
 
 We now only need one more piece to solve the puzzle and that is the function that takes care of fetching the story:
 
-```TS
-export const getStoryblokData = async (slug: string) => {
-  const storyblokApi = getStoryblokApi();
+```jsx
+export const getStoryblokData = async (slug) => {
+  const storyblokApi = getStoryblokApi()
 
   try {
-    const story = global.storyblokCache?.get(slug) as string;
+    const story = global.storyblokCache?.get(slug)
 
     if (!story) {
-      const result = await storyblokApi.get(
-        `cdn/stories/${slug}`,
-        { version: "draft" },
-      );
+      const result = await storyblokApi.get(`cdn/stories/${slug}`, { version: 'draft' })
 
-      return result.data.story;
+      return result.data.story
     }
 
-      return JSON.parse(story);
-    } catch (e) {
-      console.log(e);
-    }
-};
+    return JSON.parse(story)
+  } catch (e) {
+    console.log(e)
+  }
+}
 ```
 
 This function first tries to fetch the story from the database (this would be the story with the latest live editing). If this fails it falls back to the Storyblok API.
 
 We can then use this function on a page together with our `<StoryblokPreviewSync />` component:
 
-```TS
-import { StoryblokComponent } from "@storyblok/react/rsc";
+```jsx
+import { StoryblokComponent } from '@storyblok/react/rsc'
 
-import { StoryblokPreviewSyncer } from "@/components/StoryblokPreviewSync";
-import { getStoryblokData } from "@/utils/storyblok";
+import { StoryblokPreviewSyncer } from '@/components/StoryblokPreviewSync'
+import { getStoryblokData } from '@/utils/storyblok'
 
 export default async function Home() {
-  const story = await fetchData();
+  const story = await fetchData()
 
   return (
-  <main>
-    <StoryblokPreviewSyncer pathToRevalidate={"/"} />
-    <StoryblokComponent blok={story?.content} />
-  </main>
- );
+    <main>
+      <StoryblokPreviewSyncer pathToRevalidate={'/'} />
+      <StoryblokComponent blok={story?.content} />
+    </main>
+  )
 }
 
 function fetchData() {
-  return getStoryblokData("home");
+  return getStoryblokData('home')
 }
-
 ```
 
 There you go! Now you should have live editing support, with the full power of React Server Components!

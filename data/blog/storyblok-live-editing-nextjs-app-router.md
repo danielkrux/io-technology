@@ -22,13 +22,13 @@ I found this [Gist](https://gist.github.com/Ventanas95Dev/2683f50accac68369ef6bd
 
 When you are in the live editing environment of Storyblok, they add a class to the browser's `window` object called `StoryblokBridge`. This bridge allows you to listen to live editing events happening with `on()`:
 
-```
-const sbBridge = new window.StoryblokBridge(options);
+```js
+const sbBridge = new window.StoryblokBridge(options)
 
-sbBridge.on(["input", "published", "change  "], (event) => {
+sbBridge.on(['input', 'published', 'change  '], (event) => {
   const story = event.story
   // ...
-});
+})
 ```
 
 The event returned contains the updated story with the live editing data the user entered. Awesome!

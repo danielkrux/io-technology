@@ -131,7 +131,7 @@ export async function previewUpdateAction({ story, pathToRevalidate }) {
   }
 
   try {
-    global.storyblokCache.set(story.slug, JSON.stringify(story), 100)
+    global.storyblokCache.set(story.slug, JSON.stringify(story))
 
     if (pathToRevalidate) {
       revalidatePath(pathToRevalidate)

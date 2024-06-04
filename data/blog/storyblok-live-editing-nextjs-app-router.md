@@ -1,6 +1,6 @@
 ---
 title: 'Storyblok live editing with Next.js App Router and React Server Components'
-date: '2024-05-30'
+date: '2024-06-04'
 tags: ['Next.js', 'Storyblok']
 images: ['/articles/storyblok-live-editing-nextjs-app-router/storyblokxnextjs.webp']
 summary: "How to keep live editing support with Storyblok's full React Server Components approach for Next.js"
@@ -16,13 +16,13 @@ The second approach keeps everything server-side. This is nice because we can th
 
 Or is there a way...
 
-I found this [Gist](https://gist.github.com/Ventanas95Dev/2683f50accac68369ef6bdc3fc62e392) from someone who stumbled across the same issue, and solved it with a clever solution. I expanded on their solution and replaced their database (`@vercel/kv`) with something free and local. Let's dive in on how I did it!
+I found this [Gist](https://gist.github.com/Ventanas95Dev/2683f50accac68369ef6bdc3fc62e392) from someone who stumbled across the same issue and solved it with a clever solution. I expanded on their solution and replaced their database (`@vercel/kv`) with something free and local. Let's dive in on how I did it!
 
 ## The solution
 
 When you are in the live editing environment of Storyblok, they add a class to the browser's `window` object called `StoryblokBridge`. This bridge allows you to listen to live editing events happening with `on()`:
 
-```TS
+```
 const sbBridge = new window.StoryblokBridge(options);
 
 sbBridge.on(["input", "published", "change  "], (event) => {
